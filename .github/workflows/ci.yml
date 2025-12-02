@@ -43,6 +43,7 @@ jobs:
         SHA_TAG: ${{ steps.vars.outputs.TAG }}
         GH_PAT: ${{ secrets.GH_PAT }}
         MANIFEST_REPO: ${{ secrets.MANIFEST_REPO }}
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       run: |
         git config --global user.email "beauriful0321@gmail.com"
         git config --global user.name "Max Jagger's GitHub Actions"
@@ -50,8 +51,7 @@ jobs:
         git clone https://x-access-token:${GH_PAT}@github.com/${MANIFEST_REPO}.git
         cd $(basename ${MANIFEST_REPO})
 
-        # 이미지 태그 변경
-        sed -i "s|image: .*$|image: ${DOCKERHUB_USERNAME}/eve-app:${SHA_TAG}|" app/deployment.yaml
+        sed -i "s|image:.*|image: ${DOCKERHUB_USERNAME}/eve-app:${SHA_TAG}|" app/deployment.yaml
 
         git add app/deployment.yaml
         git commit -m "Update image tag to ${SHA_TAG}"
