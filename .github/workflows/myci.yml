@@ -1,0 +1,63 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to Harbor Registry (192.168.1.18)
+      uses: docker/login-action@v3
+      with:
+        registry: 192.168.1.18
+        # GitHub Secrets에 등록된 HARBOR_USERNAME, HARBOR_TOKEN 사용
+        username: ${{ secrets.HARBOR_USERNAME }} 
+        password: ${{ secrets.HARBOR_TOKEN }}
+
+    - name: Set image tag (SHA)
+      id: vars
+      run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+    - name: Build and push image to Harbor
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        # 태그 형식: 192.168.1.18/matchacake-harbor-repo/eve-app:<tag>
+        tags: |
+          192.168.1.18/matchacake-harbor-repo/eve-app:latest
+          192.168.1.18/matchacake-harbor-repo/eve-app:${{ steps.vars.outputs.TAG }}
+
+    - name: Print result
+      run: echo "Pushed image with tag ${{ steps.vars.outputs.TAG }}"
+
+    - name: Update deployment.yaml in manifest repo
+      env:
+        SHA_TAG: ${{ steps.vars.outputs.TAG }}
+        GH_PAT: ${{ secrets.GH_PAT }}
+        MANIFEST_REPO: ${{ secrets.MANIFEST_REPO }}
+        HARBOR_REGISTRY: 192.168.1.18
+        HARBOR_PROJECT: matchacake-harbor-repo
+      run: |
+        git config --global user.email "beauriful0321@gmail.com"
+        git config --global user.name "Max Jagger's GitHub Actions"
+
+        git clone https://x-access-token:${GH_PAT}@github.com/${MANIFEST_REPO}.git
+        cd $(basename ${MANIFEST_REPO})
+
+        # deployment.yaml 파일 내의 image 필드 업데이트
+        sed -i "s|image:.*|image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/eve-app:${SHA_TAG}|" app/deployment.yaml
+
+        git add app/deployment.yaml
+        git commit -m "Update image tag to ${SHA_TAG}"
+        git push
