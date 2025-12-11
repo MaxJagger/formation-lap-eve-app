@@ -16,14 +16,14 @@ jobs:
       uses: actions/checkout@v3
 
     # ==========================================================
-    # 🚨 추가된 해결 단계: Insecure Registry 설정
-    # Harbor 인증서 불일치 문제(192.168.10.20 인증서 vs 192.168.1.18 접속) 해결
+    # 💡 핵심 해결 단계: Insecure Registry 설정
+    # Docker 클라이언트가 192.168.1.18에 대해 HTTPS 인증서 검증을 건너뛰도록 설정
     # ==========================================================
     - name: Configure Insecure Registry for Harbor (192.168.1.18)
       run: |
         # Docker 데몬 설정 파일을 생성하거나 수정하여 192.168.1.18을 비보안 레지스트리로 등록
         sudo mkdir -p /etc/docker
-        # JSON 포맷 오류를 방지하기 위해 단일 명령으로 처리
+        # JSON 포맷으로 insecure-registries 설정 추가
         echo '{ "insecure-registries": ["192.168.1.18"] }' | sudo tee /etc/docker/daemon.json
         # Docker 서비스 재시작하여 새 설정 적용
         sudo systemctl restart docker
@@ -32,8 +32,7 @@ jobs:
     - name: Log in to Harbor Registry (192.168.1.18)
       uses: docker/login-action@v3
       with:
-        # 접속 시도 주소는 192.168.1.18 그대로 유지 (외부 IP)
-        registry: 192.168.1.18
+        registry: 192.168.1.18 # 외부에서 접근하는 IP 유지
         # GitHub Secrets에 등록된 HARBOR_USERNAME, HARBOR_TOKEN 사용
         username: ${{ secrets.HARBOR_USERNAME }} 
         password: ${{ secrets.HARBOR_TOKEN }}
@@ -61,7 +60,7 @@ jobs:
         SHA_TAG: ${{ steps.vars.outputs.TAG }}
         GH_PAT: ${{ secrets.GH_PAT }}
         MANIFEST_REPO: ${{ secrets.MANIFEST_REPO }}
-        HARBOR_REGISTRY: 192.168.1.18 # 192.168.1.18 유지
+        HARBOR_REGISTRY: 192.168.1.18 
         HARBOR_PROJECT: matchacake-harbor-repo
       run: |
         git config --global user.email "beauriful0321@gmail.com"
