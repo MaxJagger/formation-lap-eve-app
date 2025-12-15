@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return "Hello, Kubernetes from Docker!\n", 200
+    return "Hello, Kubernetes from Docker!!\n", 200
 
 @app.route("/health")
 def health():
