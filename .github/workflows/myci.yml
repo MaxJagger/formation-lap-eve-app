@@ -21,7 +21,7 @@ jobs:
     # ==========================================================
     - name: Configure Insecure Registry for Harbor (192.168.1.18)
       run: |
-        # Docker 데몬 설정 파일을 생성하거나 수정
+        # Docker 데몬 설정 파일을 생성하거나 수정d
         sudo mkdir -p /etc/docker
         # JSON 포맷으로 insecure-registries 설정 추가
         echo '{ "insecure-registries": ["192.168.1.18"] }' | sudo tee /etc/docker/daemon.json
