@@ -3,76 +3,64 @@ name: Build and Push Docker Image
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: self-hosted
 
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1. 소스 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # ==========================================================
-    # 💡 핵심 해결 단계: Insecure Registry 설정
-    # 192.168.1.18 주소에 대해 Docker의 인증서 검증을 건너뛰도록 설정
-    # ==========================================================
-    - name: Configure Insecure Registry for Harbor (192.168.1.18)
-      run: |
-        # Docker 데몬 설정 파일을 생성하거나 수정d
-        sudo mkdir -p /etc/docker
-        # JSON 포맷으로 insecure-registries 설정 추가
-        echo '{ "insecure-registries": ["192.168.1.18"] }' | sudo tee /etc/docker/daemon.json
-        # Docker 서비스 재시작하여 새 설정 적용
-        sudo systemctl restart docker
-        echo "192.168.1.18 is now configured as an insecure registry."
+      # 2. Harbor 로그인
+      - name: Log in to Harbor Registry
+        uses: docker/login-action@v3
+        with:
+          registry: 192.168.1.18
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_TOKEN }}
 
-    - name: Log in to Harbor Registry (192.168.1.18)
-      uses: docker/login-action@v3
-      with:
-        registry: 192.168.1.18
-        # GitHub Secrets에 등록된 HARBOR_USERNAME, HARBOR_TOKEN 사용
-        username: ${{ secrets.HARBOR_USERNAME }} 
-        password: ${{ secrets.HARBOR_TOKEN }}
+      # 3. 이미지 태그 생성 (SHA 앞 7자리)
+      - name: Set image tag (SHA)
+        id: vars
+        run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
 
-    - name: Set image tag (SHA)
-      id: vars
-      run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+      # 4. Docker 이미지 빌드 & 푸시
+      - name: Build and push image to Harbor
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            192.168.1.18/matchacake-harbor-repo/eve-app:latest
+            192.168.1.18/matchacake-harbor-repo/eve-app:${{ steps.vars.outputs.TAG }}
 
-    - name: Build and push image to Harbor
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        # 태그 형식: 192.168.1.18/matchacake-harbor-repo/eve-app:<tag>
-        tags: |
-          192.168.1.18/matchacake-harbor-repo/eve-app:latest
-          192.168.1.18/matchacake-harbor-repo/eve-app:${{ steps.vars.outputs.TAG }}
+      # 5. 결과 출력
+      - name: Print result
+        run: echo "Pushed image with tag ${{ steps.vars.outputs.TAG }}"
 
-    - name: Print result
-      run: echo "Pushed image with tag ${{ steps.vars.outputs.TAG }}"
+      # 6. Manifest repo의 deployment.yaml 업데이트
+      - name: Update deployment.yaml in manifest repo
+        env:
+          SHA_TAG: ${{ steps.vars.outputs.TAG }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          MANIFEST_REPO: ${{ secrets.MANIFEST_REPO }}
+          HARBOR_REGISTRY: 192.168.1.18
+          HARBOR_PROJECT: matchacake-harbor-repo
+        run: |
+          git config --global user.email "beauriful0321@gmail.com"
+          git config --global user.name "Max Jagger's GitHub Actions"
 
-    - name: Update deployment.yaml in manifest repo
-      env:
-        SHA_TAG: ${{ steps.vars.outputs.TAG }}
-        GH_PAT: ${{ secrets.GH_PAT }}
-        MANIFEST_REPO: ${{ secrets.MANIFEST_REPO }}
-        HARBOR_REGISTRY: 192.168.1.18
-        HARBOR_PROJECT: matchacake-harbor-repo
-      run: |
-        git config --global user.email "beauriful0321@gmail.com"
-        git config --global user.name "Max Jagger's GitHub Actions"
+          git clone https://x-access-token:${GH_PAT}@github.com/${MANIFEST_REPO}.git
+          cd $(basename ${MANIFEST_REPO})
 
-        git clone https://x-access-token:${GH_PAT}@github.com/${MANIFEST_REPO}.git
-        cd $(basename ${MANIFEST_REPO})
+          sed -i "s|image:.*|image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/eve-app:${SHA_TAG}|" app/deployment.yaml
 
-        # deployment.yaml 파일 내의 image 필드 업데이트
-        sed -i "s|image:.*|image: ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/eve-app:${SHA_TAG}|" app/deployment.yaml
-
-        git add app/deployment.yaml
-        git commit -m "Update image tag to ${SHA_TAG}"
-        git push
+          git add app/deployment.yaml
+          git commit -m "Update image tag to ${SHA_TAG}"
+          git push
