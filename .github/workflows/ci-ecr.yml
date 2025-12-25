@@ -43,7 +43,7 @@ jobs:
 
       - name: Build & Push product-service
         run: |
-          docker build -t product-service:${IMAGE_TAG} ./services/provider-service
+          docker build -t product-service:${IMAGE_TAG} ./services/product-service
           docker tag product-service:${IMAGE_TAG} $ECR_REGISTRY/product-service-test:${IMAGE_TAG}
           docker push $ECR_REGISTRY/product-service:${IMAGE_TAG}
 
