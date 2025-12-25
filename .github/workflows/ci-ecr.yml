@@ -1,0 +1,49 @@
+name: CI - Build & Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push user-service
+        run: |
+          docker build -t user-service:${IMAGE_TAG} ./services/user-service
+          docker tag user-service:${IMAGE_TAG} $ECR_REGISTRY/user-service:${IMAGE_TAG}
+          docker push $ECR_REGISTRY/user-service:${IMAGE_TAG}
+
+      - name: Build & Push order-service
+        run: |
+          docker build -t order-service:${IMAGE_TAG} ./services/order-service
+          docker tag order-service:${IMAGE_TAG} $ECR_REGISTRY/order-service:${IMAGE_TAG}
+          docker push $ECR_REGISTRY/order-service:${IMAGE_TAG}
+
+      - name: Build & Push product-service
+        run: |
+          docker build -t product-service:${IMAGE_TAG} ./services/provider-service
+          docker tag product-service:${IMAGE_TAG} $ECR_REGISTRY/product-service-test:${IMAGE_TAG}
+          docker push $ECR_REGISTRY/product-service:${IMAGE_TAG}
+
