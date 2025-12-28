@@ -16,6 +16,7 @@ def get_users():
             {"id": 2, "name": "lap"},
             {"id": 3, "name": "ufc"},
             {"id": 4, "name": "F1"}
+            {"id": 5, "name": "Max"}
 
         ]
     }
