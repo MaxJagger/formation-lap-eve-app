@@ -8,7 +8,8 @@ def get_users():
         "service": "user-service",
         "users": [
             {"id": 1, "name": "eve"},
-            {"id": 2, "name": "lap"}
+            {"id": 2, "name": "lap"},
+            {"id": 3, "name": "ufc"}
         ]
     }
 
