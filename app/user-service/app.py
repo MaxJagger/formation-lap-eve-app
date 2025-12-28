@@ -9,7 +9,9 @@ def get_users():
         "users": [
             {"id": 1, "name": "eve"},
             {"id": 2, "name": "lap"},
-            {"id": 3, "name": "ufc"}
+            {"id": 3, "name": "ufc"},
+            {"id": 4, "name": "F1"}
+
         ]
     }
 
