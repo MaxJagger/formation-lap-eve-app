@@ -2,6 +2,10 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
+@app.get("/")
+def root():
+    return {"ok": True}
+
 @app.get("/orders")
 def get_orders():
     return {
