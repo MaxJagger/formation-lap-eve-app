@@ -62,9 +62,9 @@ jobs:
 
       - name: Update images in manifests repo (base/deployment)
         env:
-          USER_IMAGE: ${{ env.ECR_REGISTRY }}/user-service:${{ env.IMAGE_TAG }}
-          ORDER_IMAGE: ${{ env.ECR_REGISTRY }}/order-service:${{ env.IMAGE_TAG }}
-          PRODUCT_IMAGE: ${{ env.ECR_REGISTRY }}/product-service:${{ env.IMAGE_TAG }}
+          USER_IMAGE: ${{ env.ECR_REGISTRY }}/chan-user-service:${{ env.IMAGE_TAG }}
+          ORDER_IMAGE: ${{ env.ECR_REGISTRY }}/chan-order-service:${{ env.IMAGE_TAG }}
+          PRODUCT_IMAGE: ${{ env.ECR_REGISTRY }}/chan-product-service:${{ env.IMAGE_TAG }}
         run: |
           cd manifests
 
