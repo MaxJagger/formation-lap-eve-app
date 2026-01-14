@@ -8,6 +8,7 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from prometheus_fastapi_instrumentator import Instrumentator
 
 def _normalize_otlp_grpc_endpoint(endpoint: str) -> str:
     if endpoint.startswith("http://"):
@@ -30,6 +31,7 @@ exporter = OTLPSpanExporter(endpoint=OTLP_ENDPOINT, insecure=True)
 provider.add_span_processor(BatchSpanProcessor(exporter))
 
 app = FastAPI()
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 FastAPIInstrumentor.instrument_app(app)
 
 
