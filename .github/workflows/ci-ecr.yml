@@ -32,18 +32,18 @@ jobs:
 
       - name: Build & Push user-service
         run: |
-          docker build -t $ECR_REGISTRY/user-service:${IMAGE_TAG} ./app/user-service
-          docker push $ECR_REGISTRY/user-service:${IMAGE_TAG}
+          docker build -t $ECR_REGISTRY/chan-user-service:${IMAGE_TAG} ./app/user-service
+          docker push $ECR_REGISTRY/chan-user-service:${IMAGE_TAG}
 
       - name: Build & Push order-service
         run: |
-          docker build -t $ECR_REGISTRY/order-service:${IMAGE_TAG} ./app/order-service
-          docker push $ECR_REGISTRY/order-service:${IMAGE_TAG}
+          docker build -t $ECR_REGISTRY/chan-order-service:${IMAGE_TAG} ./app/order-service
+          docker push $ECR_REGISTRY/chan-order-service:${IMAGE_TAG}
 
       - name: Build & Push product-service
         run: |
-          docker build -t $ECR_REGISTRY/product-service:${IMAGE_TAG} ./app/product-service
-          docker push $ECR_REGISTRY/product-service:${IMAGE_TAG}
+          docker build -t $ECR_REGISTRY/chan-product-service:${IMAGE_TAG} ./app/product-service
+          docker push $ECR_REGISTRY/chan-product-service:${IMAGE_TAG}
 
       # --- 여기부터 manifests repo 업데이트 ---
       - name: Checkout manifests repo
@@ -62,9 +62,9 @@ jobs:
 
       - name: Update images in manifests repo (base/deployment)
         env:
-          USER_IMAGE: ${{ env.ECR_REGISTRY }}/user-service:${{ env.IMAGE_TAG }}
-          ORDER_IMAGE: ${{ env.ECR_REGISTRY }}/order-service:${{ env.IMAGE_TAG }}
-          PRODUCT_IMAGE: ${{ env.ECR_REGISTRY }}/product-service:${{ env.IMAGE_TAG }}
+          USER_IMAGE: ${{ env.ECR_REGISTRY }}/chan-user-service:${{ env.IMAGE_TAG }}
+          ORDER_IMAGE: ${{ env.ECR_REGISTRY }}/chan-order-service:${{ env.IMAGE_TAG }}
+          PRODUCT_IMAGE: ${{ env.ECR_REGISTRY }}/chan-product-service:${{ env.IMAGE_TAG }}
         run: |
           cd manifests
 
