@@ -1,4 +1,4 @@
-name: CI - 백엔드 API 배포
+name: CI - Build & Push to ECR + Update Manifests Repo
 
 on:
   push:
@@ -30,22 +30,22 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & Push user-service
+      - name: Build & Push formation-user
         run: |
-          docker build -t $ECR_REGISTRY/chan-user-service:${IMAGE_TAG} ./app/user-service
-          docker push $ECR_REGISTRY/chan-user-service:${IMAGE_TAG}
+          docker build -t $ECR_REGISTRY/formation-user:${IMAGE_TAG} ./app/formation-user
+          docker push $ECR_REGISTRY/formation-user:${IMAGE_TAG}
 
-      - name: Build & Push order-service
+      - name: Build & Push formation-search
         run: |
-          docker build -t $ECR_REGISTRY/chan-order-service:${IMAGE_TAG} ./app/order-service
-          docker push $ECR_REGISTRY/chan-order-service:${IMAGE_TAG}
+          docker build -t $ECR_REGISTRY/formation-search:${IMAGE_TAG} ./app/formation-search
+          docker push $ECR_REGISTRY/formation-search:${IMAGE_TAG}
 
-      - name: Build & Push product-service
+      - name: Build & Push formation-video
         run: |
-          docker build -t $ECR_REGISTRY/chan-product-service:${IMAGE_TAG} ./app/product-service
-          docker push $ECR_REGISTRY/chan-product-service:${IMAGE_TAG}
+          docker build -t $ECR_REGISTRY/formation-video:${IMAGE_TAG} ./app/formation-video
+          docker push $ECR_REGISTRY/formation-video:${IMAGE_TAG}
 
-      # --- 여기부터 manifests repo 업데이트 ---
+      # --- manifests repo 업데이트 ---
       - name: Checkout manifests repo
         uses: actions/checkout@v4
         with:
@@ -62,15 +62,15 @@ jobs:
 
       - name: Update images in manifests repo (base/deployment)
         env:
-          USER_IMAGE: ${{ env.ECR_REGISTRY }}/chan-user-service:${{ env.IMAGE_TAG }}
-          ORDER_IMAGE: ${{ env.ECR_REGISTRY }}/chan-order-service:${{ env.IMAGE_TAG }}
-          PRODUCT_IMAGE: ${{ env.ECR_REGISTRY }}/chan-product-service:${{ env.IMAGE_TAG }}
+          USER_IMAGE: ${{ env.ECR_REGISTRY }}/formation-user:${{ env.IMAGE_TAG }}
+          SEARCH_IMAGE: ${{ env.ECR_REGISTRY }}/formation-search:${{ env.IMAGE_TAG }}
+          VIDEO_IMAGE: ${{ env.ECR_REGISTRY }}/formation-video:${{ env.IMAGE_TAG }}
         run: |
           cd manifests
 
-          yq -i '.spec.template.spec.containers[0].image = strenv(USER_IMAGE)' base/deployment/user-deployment.yaml
-          yq -i '.spec.template.spec.containers[0].image = strenv(ORDER_IMAGE)' base/deployment/order-deployment.yaml
-          yq -i '.spec.template.spec.containers[0].image = strenv(PRODUCT_IMAGE)' base/deployment/product-deployment.yaml
+          yq -i '.spec.template.spec.containers[0].image = strenv(USER_IMAGE)' base/deployment/formation-user-deployment.yaml
+          yq -i '.spec.template.spec.containers[0].image = strenv(SEARCH_IMAGE)' base/deployment/formation-search-deployment.yaml
+          yq -i '.spec.template.spec.containers[0].image = strenv(VIDEO_IMAGE)' base/deployment/formation-video-deployment.yaml
 
           echo "Updated images:"
           grep -R "image:" -n base/deployment/*.yaml
@@ -83,7 +83,6 @@ jobs:
 
           git add base/deployment/*.yaml
 
-          # 변경 없으면 커밋 스킵
           git commit -m "chore: deploy ${IMAGE_TAG}" || echo "No changes to commit"
           git push
 

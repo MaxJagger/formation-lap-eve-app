@@ -8,8 +8,12 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 def _normalize_otlp_grpc_endpoint(endpoint: str) -> str:
+    # grpc exporter expects "host:port" 형태가 안전함.
+    # 사용자가 "http://host:4317"로 넣어도 동작하도록 스킴 제거.
     if endpoint.startswith("http://"):
         return endpoint[len("http://") :]
     if endpoint.startswith("https://"):
@@ -17,7 +21,7 @@ def _normalize_otlp_grpc_endpoint(endpoint: str) -> str:
     return endpoint
 
 
-SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "user-service")
+SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "formation-user")
 OTLP_ENDPOINT = _normalize_otlp_grpc_endpoint(
     os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317")
 )
@@ -30,6 +34,7 @@ exporter = OTLPSpanExporter(endpoint=OTLP_ENDPOINT, insecure=True)
 provider.add_span_processor(BatchSpanProcessor(exporter))
 
 app = FastAPI()
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 FastAPIInstrumentor.instrument_app(app)
 
 
@@ -38,16 +43,25 @@ def root():
     return {"ok": True}
 
 
-@app.get("/users")
-def get_users():
-    return {
-        "service": "user-service",
-        "users": [
-            {"id": 1, "name": "eve"},
-            {"id": 2, "name": "lap"},
-            {"id": 3, "name": "ufc"},
-            {"id": 4, "name": "F1"},
-            {"id": 5, "name": "Max"},
-        ],
-    }
+@app.post("/api/v1/auth/signup")
+def signup():
+    # Minimal demo response
+    return [
+        {
+            "service": SERVICE_NAME,
+            "endpoint": "/api/v1/auth/signup",
+            "result": "ok",
+        }
+    ]
+
+
+@app.post("/api/v1/auth/login")
+def login():
+    return [
+        {
+            "service": SERVICE_NAME,
+            "endpoint": "/api/v1/auth/login",
+            "result": "ok",
+        }
+    ]
 
